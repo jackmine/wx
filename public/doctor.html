@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>智愈云医生端</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="logo">
+        <span>智愈云医生端</span>
+        <span class="badge" id="doctorTitle">加载中</span>
+      </div>
+      <nav class="nav-links">
+        <a href="/index.html">首页</a>
+        <a href="/patient.html">患者端</a>
+        <a href="#">处方审核</a>
+        <a href="#">排班管理</a>
+      </nav>
+    </header>
+
+    <main class="container">
+      <section class="hero">
+        <div>
+          <h1 id="doctorName">欢迎回来，</h1>
+          <p>掌握今日诊疗进度、患者队列与重点预警。</p>
+        </div>
+        <div class="hero-actions">
+          <button class="button primary">开启接诊</button>
+          <button class="button secondary">查看质控</button>
+        </div>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <h3>今日排班</h3>
+          <div class="list" id="schedule"></div>
+        </article>
+        <article class="card">
+          <h3>患者队列</h3>
+          <div class="list" id="queue"></div>
+        </article>
+        <article class="card">
+          <h3>重点预警</h3>
+          <div class="list" id="alerts"></div>
+        </article>
+        <article class="card">
+          <h3>服务表现</h3>
+          <div class="list" id="performance"></div>
+        </article>
+      </section>
+
+      <section class="split" style="margin-top: 20px;">
+        <article class="card">
+          <h3>我的今日预约</h3>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>编号</th>
+                <th>患者</th>
+                <th>时间</th>
+                <th>类型</th>
+                <th>状态</th>
+              </tr>
+            </thead>
+            <tbody id="appointments"></tbody>
+          </table>
+        </article>
+        <article class="card">
+          <h3>AI 辅助建议</h3>
+          <div class="list">
+            <div class="list-item"><span>建议优先处理</span><span class="highlight">高风险随访</span></div>
+            <div class="list-item"><span>智能分诊完成率</span><span class="highlight">92%</span></div>
+            <div class="list-item"><span>处方合规</span><span class="highlight">100%</span></div>
+          </div>
+        </article>
+      </section>
+
+      <div class="footer">医生端数据来自后端实时协同。</div>
+    </main>
+
+    <script>
+      const loadData = async () => {
+        const [overviewRes, appointmentsRes] = await Promise.all([
+          fetch("/api/doctor/overview"),
+          fetch("/api/appointments?role=doctor")
+        ]);
+        const overview = await overviewRes.json();
+        const appointments = await appointmentsRes.json();
+
+        document.getElementById("doctorName").textContent = `欢迎回来，${overview.name}`;
+        document.getElementById("doctorTitle").textContent = `${overview.title} · ${overview.department}`;
+
+        const schedule = document.getElementById("schedule");
+        schedule.innerHTML = `
+          <div class="list-item"><span>总诊次</span><span>${overview.todaySchedule.total}</span></div>
+          <div class="list-item"><span>线上</span><span>${overview.todaySchedule.online}</span></div>
+          <div class="list-item"><span>线下</span><span>${overview.todaySchedule.inPerson}</span></div>
+        `;
+
+        const queue = document.getElementById("queue");
+        queue.innerHTML = "";
+        overview.patientQueue.forEach((item) => {
+          const div = document.createElement("div");
+          div.className = "list-item";
+          div.innerHTML = `<span>${item.name} · ${item.tag}</span><span class="tag">${item.status}</span>`;
+          queue.appendChild(div);
+        });
+
+        const alerts = document.getElementById("alerts");
+        alerts.innerHTML = "";
+        overview.alerts.forEach((item) => {
+          const div = document.createElement("div");
+          div.className = "list-item";
+          div.innerHTML = `<span>${item}</span><span class="tag">待处理</span>`;
+          alerts.appendChild(div);
+        });
+
+        const performance = document.getElementById("performance");
+        performance.innerHTML = `
+          <div class="list-item"><span>满意度</span><span>${overview.performance.satisfaction}</span></div>
+          <div class="list-item"><span>平均响应</span><span>${overview.performance.responseTime}</span></div>
+          <div class="list-item"><span>累计问诊</span><span>${overview.performance.consults}</span></div>
+        `;
+
+        const appointmentsBody = document.getElementById("appointments");
+        appointmentsBody.innerHTML = "";
+        appointments.forEach((item) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${item.id}</td>
+            <td>${item.patient}</td>
+            <td>${item.time}</td>
+            <td>${item.type}</td>
+            <td>${item.status}</td>
+          `;
+          appointmentsBody.appendChild(row);
+        });
+      };
+
+      loadData();
+    </script>
+  </body>
+</html>
