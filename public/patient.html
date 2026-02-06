@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>智愈云患者端</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="logo">
+        <span>智愈云患者端</span>
+        <span class="badge" id="memberLevel">加载中</span>
+      </div>
+      <nav class="nav-links">
+        <a href="/index.html">首页</a>
+        <a href="/doctor.html">医生端</a>
+        <a href="#">消息中心</a>
+        <a href="#">个人中心</a>
+      </nav>
+    </header>
+
+    <main class="container">
+      <section class="hero">
+        <div>
+          <h1 id="patientName">您好，</h1>
+          <p>实时掌握问诊预约、健康指标与专属护理计划。</p>
+        </div>
+        <div class="hero-actions">
+          <button class="button primary">一键复诊</button>
+          <button class="button secondary">续方申请</button>
+        </div>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <h3>近期预约</h3>
+          <p id="appointmentInfo">正在加载...</p>
+        </article>
+        <article class="card">
+          <h3>专属护理计划</h3>
+          <div class="list" id="carePlan"></div>
+        </article>
+        <article class="card">
+          <h3>健康指标</h3>
+          <div class="list" id="healthStats"></div>
+        </article>
+        <article class="card">
+          <h3>在线医生服务</h3>
+          <div class="list" id="serviceStatus"></div>
+        </article>
+      </section>
+
+      <section class="split" style="margin-top: 20px;">
+        <article class="card">
+          <h3>我的预约清单</h3>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>编号</th>
+                <th>医生</th>
+                <th>时间</th>
+                <th>类型</th>
+                <th>状态</th>
+              </tr>
+            </thead>
+            <tbody id="appointments"></tbody>
+          </table>
+        </article>
+        <article class="card">
+          <h3>服务提醒</h3>
+          <div class="list">
+            <div class="list-item"><span>在线问诊响应时长</span><span class="highlight">≤ 3 分钟</span></div>
+            <div class="list-item"><span>药品配送时效</span><span class="highlight">当日达</span></div>
+            <div class="list-item"><span>慢病随访</span><span class="highlight">每周提醒</span></div>
+          </div>
+        </article>
+      </section>
+
+      <div class="footer">患者端数据均来自后端 API 实时拉取。</div>
+    </main>
+
+    <script>
+      const loadData = async () => {
+        const [overviewRes, appointmentsRes] = await Promise.all([
+          fetch("/api/patient/overview"),
+          fetch("/api/appointments?role=patient")
+        ]);
+        const overview = await overviewRes.json();
+        const appointments = await appointmentsRes.json();
+
+        document.getElementById("patientName").textContent = `您好，${overview.name}`;
+        document.getElementById("memberLevel").textContent = overview.memberLevel;
+        document.getElementById("appointmentInfo").textContent = `${overview.upcomingAppointment.date} · ${overview.upcomingAppointment.department} · ${overview.upcomingAppointment.doctor}`;
+
+        const carePlan = document.getElementById("carePlan");
+        carePlan.innerHTML = "";
+        overview.carePlan.forEach((item) => {
+          const div = document.createElement("div");
+          div.className = "list-item";
+          div.innerHTML = `<span>${item}</span><span class="tag">进行中</span>`;
+          carePlan.appendChild(div);
+        });
+
+        const healthStats = document.getElementById("healthStats");
+        healthStats.innerHTML = `
+          <div class="list-item"><span>血压</span><span>${overview.healthStats.bloodPressure}</span></div>
+          <div class="list-item"><span>血糖</span><span>${overview.healthStats.bloodSugar}</span></div>
+          <div class="list-item"><span>体重</span><span>${overview.healthStats.weight}</span></div>
+          <div class="list-item"><span>同步时间</span><span>${overview.healthStats.lastSync}</span></div>
+        `;
+
+        const serviceStatus = document.getElementById("serviceStatus");
+        serviceStatus.innerHTML = `
+          <div class="list-item"><span>专属医生</span><span>${overview.serviceStatus.onlineDoctor}</span></div>
+          <div class="list-item"><span>响应时效</span><span>${overview.serviceStatus.responseTime}</span></div>
+          <div class="list-item"><span>满意度</span><span>${overview.serviceStatus.serviceScore}</span></div>
+        `;
+
+        const appointmentsBody = document.getElementById("appointments");
+        appointmentsBody.innerHTML = "";
+        appointments.forEach((item) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${item.id}</td>
+            <td>${item.doctor}</td>
+            <td>${item.time}</td>
+            <td>${item.type}</td>
+            <td>${item.status}</td>
+          `;
+          appointmentsBody.appendChild(row);
+        });
+      };
+
+      loadData();
+    </script>
+  </body>
+</html>

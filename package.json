@@ -1,0 +1,9 @@
+{
+  "name": "wx-internet-medical",
+  "version": "1.0.0",
+  "description": "Internet medical project with patient and doctor portals",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
